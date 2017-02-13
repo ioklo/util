@@ -12,8 +12,7 @@ namespace RunCode
     {
         static void Main(string[] args)
         {
-            Console.OutputEncoding = Encoding.UTF8; // VSCode를 위해
-            // Console.InputEncoding = Encoding.UTF8; // VSCode를 위해
+            Console.OutputEncoding = Encoding.UTF8; // VSCode를 위해            
 
             // vsvarargs
             var vsvars32 = @"C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\Tools\vsvars32.bat";
@@ -42,7 +41,7 @@ namespace RunCode
                 // clean process
                 if (File.Exists(exeFileInfo.FullName)) exeFileInfo.Delete();
 
-                RunCommand($"\"{vsvars32}\" & csc /nologo /out:\"{exeFileInfo.FullName}\" \"{fileInfo.FullName}\"");
+                RunCommand($"\"{vsvars32}\" & csc /nologo /out:\"{exeFileInfo.FullName}\" \"{fileInfo.FullName}\"", Encoding.UTF8);
 
                 if (!File.Exists(exeFileInfo.FullName))
                 {
@@ -50,7 +49,7 @@ namespace RunCode
                     return;
                 }
 
-                RunCommand(exeFileInfo.FullName);
+                RunCommand(exeFileInfo.FullName, Encoding.UTF8);
 
                 // clean process 
                 if (File.Exists(exeFileInfo.FullName)) exeFileInfo.Delete();
@@ -64,7 +63,7 @@ namespace RunCode
                 if (File.Exists(exeFileInfo.FullName)) exeFileInfo.Delete();
                 if (File.Exists(objFileInfo.FullName)) objFileInfo.Delete();
 
-                RunCommand($"\"{vsvars32}\" & cl /nologo /Fe:\"{exeFileInfo.FullName}\" /Fo\"{objFileInfo.FullName}\" \"{fileInfo.FullName}\"");
+                RunCommand($"\"{vsvars32}\" & cl /nologo /Fe:\"{exeFileInfo.FullName}\" /Fo\"{objFileInfo.FullName}\" \"{fileInfo.FullName}\"", Encoding.UTF8);
 
                 if (!File.Exists(exeFileInfo.FullName))
                 {
@@ -72,7 +71,7 @@ namespace RunCode
                     return;
                 }
 
-                RunCommand(exeFileInfo.FullName);
+                RunCommand(exeFileInfo.FullName, Encoding.Default);
 
                 // clean process 
                 if (File.Exists(exeFileInfo.FullName)) exeFileInfo.Delete();
@@ -86,7 +85,7 @@ namespace RunCode
 
         }
 
-        private static void RunCommand(string command)
+        private static void RunCommand(string command, Encoding encoding)
         {
             // cmd /c를 바로 쓰면 따옴표로 둘러싼 인자가 하나까지만 허용된다, 인자 두개를 따옴표로 둘러싸거나 몇몇 경우에, cmd /s /c로 동작한다 
             // cmd /s /c 는 인자들을 따옴표 한개로 크게 묶고, 안에서 일반적으로 사용하듯이 따옴표로 인자들을 구분하면 된다
@@ -95,8 +94,8 @@ namespace RunCode
             compileProcessStartInfo.RedirectStandardOutput = true;
             compileProcessStartInfo.RedirectStandardError = true;
 
-            compileProcessStartInfo.StandardOutputEncoding = Encoding.Default;
-            // compileProcessStartInfo.StandardErrorEncoding = Encoding.UTF8;
+            compileProcessStartInfo.StandardOutputEncoding = encoding;
+            compileProcessStartInfo.StandardErrorEncoding = encoding;
 
             var compileProcess = Process.Start(compileProcessStartInfo);
 
