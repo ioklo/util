@@ -7,9 +7,16 @@ namespace FileFind
 {
     class Item
     {        
-        public string FileName { get; set; }
-        public int Line { get; set; }
-        public int Col { get; set; }
+        public string FileName { get; private set; }
+        public int Line { get; private set; }
+        public int Col { get; private set; }
+
+        public Item(string filename, int line, int col)
+        {
+            FileName = filename;
+            Line = line;
+            Col = col;
+        }
 
         public override string ToString()
         {

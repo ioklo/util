@@ -12,7 +12,7 @@
       <Value Profile="(Default)" />
     </Setting>
     <Setting Name="Editor" Type="System.String" Scope="User">
-      <Value Profile="(Default)">C:\Program Files (x86)\EditPlus 3\Editplus.exe</Value>
+      <Value Profile="(Default)">C:\Program Files (x86)\EditPlus\Editplus.exe</Value>
     </Setting>
     <Setting Name="EditorArgs" Type="System.String" Scope="User">
       <Value Profile="(Default)">{0} -cursor {1}:{2}</Value>

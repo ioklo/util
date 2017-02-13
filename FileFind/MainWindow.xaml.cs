@@ -19,6 +19,7 @@ using System.Windows.Threading;
 using FileFind.Properties;
 using System.Diagnostics;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 
 namespace FileFind
 {
@@ -32,119 +33,112 @@ namespace FileFind
             InitializeComponent();
             textBox1.Focus();
         }
-
-        void SetButtonLabel(string text)
+        
+        private async Task Search( string searchText, string pathText, string patternText, Encoding encoding, CancellationToken cancellationToken)
         {
-            if (button1.Dispatcher.CheckAccess())
-            {
-                button1.Content = text;
-            }
-            else
-            {
-                button1.Dispatcher.Invoke( (Action<string>)SetButtonLabel, text);
-            }
-        }
+            string[] paths = pathText.Split(';');
+            string[] patterns = patternText.Split(';');
 
-        private void Search( dynamic arg )
-        {
-            string searchStr = arg.searchStr;
-            string[] paths = ((string)arg.path).Split(';');
-            string[] patterns = ((string)arg.pattern).Split(';');
-            Encoding encoding = arg.encoding;
+            Regex regex = new Regex(searchText, RegexOptions.IgnoreCase);
+            listView1.Items.Clear();
 
-            Regex regex = new Regex(searchStr, RegexOptions.IgnoreCase);
+            var stack = new Stack<string>();
+            foreach (var path in paths.Reverse())
+                stack.Push(path);
 
-            var stack = new List<string>();            
-            stack.AddRange(paths);
-
-            Dispatcher.Invoke((Action)(()=>listView1.Items.Clear()));
-            
             while (stack.Count != 0)
             {
-                string dir = stack[stack.Count - 1];
-                stack.RemoveAt(stack.Count - 1);
+                string dir = stack.Pop();
+                if (cancellationToken.IsCancellationRequested) return;
 
-                try 
+                await Task.Run(() =>
                 {
-                    stack.AddRange(
-                        from d in Directory.GetDirectories(dir)
-                        orderby d descending
-                        select d);
-                }
-                catch(Exception)
-                {
-
-                }
+                    try
+                    {
+                        foreach (var childDir in Directory.GetDirectories(dir).OrderByDescending(d => d))
+                            stack.Push(childDir);
+                    }
+                    catch { }
+                }, cancellationToken);
 
                 try
                 {
-                    foreach (var pattern in patterns)
-                        foreach (string filename in
-                            Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly))
-                        {
-                            int lineCount = 1;
-                            Dispatcher.Invoke((Action)(() => label4.Content = filename));
-
-                            if (searchStr.Length == 0)
-                            {
-                                var item = new Item
-                                {
-                                    FileName = filename,
-                                    Line = 0,
-                                    Col = 0
-                                };
-
-                                listView1.Dispatcher.Invoke(
-                                    (Action)(() => listView1.Items.Add(item)));
-
-                                continue;
-                            }
-
-                            using (var reader = new StreamReader(filename, encoding))
-                            {
-                                string line = reader.ReadLine();
-                                while (line != null)
-                                {
-                                    foreach (Match m in regex.Matches(line))
-                                    {
-                                        var item = new Item
-                                        {
-                                            FileName = filename,
-                                            Line = lineCount,
-                                            Col = m.Index + 1
-                                        };
-
-                                        listView1.Dispatcher.Invoke(
-                                            (Action)(() => listView1.Items.Add(item)));
-                                    }
-
-                                    lineCount++;
-                                    line = reader.ReadLine();
-                                }
-                            }
-                        }
-                }
-                catch(DirectoryNotFoundException)
-                { 
+                    List<string> filenames = await Task.Run(() =>
+                    {
+                        return patterns.SelectMany(pattern => Directory.EnumerateFiles(dir, pattern, SearchOption.TopDirectoryOnly))
+                                       .Distinct()
+                                       .ToList();
+                    }, cancellationToken);
                     
+                    foreach (string filename in filenames)
+                    {
+                        label4.Content = filename;
+
+                        if (searchText.Length == 0)
+                        {
+                            if (cancellationToken.IsCancellationRequested) return;
+
+                            var item = new Item(filename, 0, 0);
+                            listView1.Items.Add(item);
+                            continue;
+                        }
+
+                        List<Item> items = await Task.Run(() => SearchInFile(encoding, cancellationToken, regex, filename), cancellationToken);
+                        if (cancellationToken.IsCancellationRequested) return;
+
+                        foreach (var item in items)
+                            listView1.Items.Add(item);
+                    }
+                }
+                catch (DirectoryNotFoundException)
+                {
 
                 }
-
             }
-            SetButtonLabel("찾기");
-            thread = null;
+
+            button1.Content = "찾기";
         }
 
-        private Thread thread = null;
-
-        private void button1_Click(object sender, RoutedEventArgs e)
+        private List<Item> SearchInFile(Encoding encoding, CancellationToken cancellationToken, Regex regex, string filename)
         {
-            if (thread != null)
+            List<Item> items = new List<Item>();
+            int lineCount = 1;
+
+            using (var reader = new StreamReader(filename, encoding))
             {
-                // 중지 모드니까 중지
-                thread.Abort();
-                thread = null;
-                SetButtonLabel("찾기");
+                string line = reader.ReadLine();
+                while (line != null)
+                {
+                    foreach (Match m in regex.Matches(line))
+                    {
+                        var item = new Item(filename, lineCount, m.Index + 1);
+                        items.Add(item);
+                    }
+
+                    lineCount++;
+                    line = reader.ReadLine();
+                }
+            }
+
+            return items;
+        }
+
+        private Task searchTask = null;
+        private CancellationTokenSource cancellationTokenSource = null;
+
+        private async void button1_Click(object sender, RoutedEventArgs e)
+        {
+            if (searchTask != null)
+            {
+                button1.IsEnabled = false;
+                cancellationTokenSource.Cancel();
+
+                await searchTask;
+                searchTask = null;
+                cancellationTokenSource = null;
+
+                button1.Content = "찾기";
+                button1.IsEnabled = true;
                 return;
             }
 
@@ -154,23 +148,20 @@ namespace FileFind
                 return;
             }
 
-            thread = new Thread(Search);
+            button1.Content = "중지";
 
-            dynamic arg = new ExpandoObject();
-            arg.searchStr = textBox1.Text;
-            arg.path = textBox2.Text;
-            arg.pattern = textBox3.Text;
-
-            arg.encoding = Encoding.GetEncoding((string)encodingBox.SelectionBoxItem.ToString());
-
-            thread.Start(arg);
-            SetButtonLabel("중지");
+            var encoding = Encoding.GetEncoding((string)encodingBox.SelectionBoxItem.ToString());
+            cancellationTokenSource = new CancellationTokenSource();
+            searchTask = Search(textBox1.Text, textBox2.Text, textBox3.Text, encoding, cancellationTokenSource.Token);
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (thread != null)
-                thread.Abort();
+            if (searchTask != null)
+            {
+                cancellationTokenSource.Cancel();
+                await searchTask;
+            }
 
             Settings.Default.SearchString = textBox1.Text;
             Settings.Default.Path = textBox2.Text;
