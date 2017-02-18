@@ -5,8 +5,6 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodayNoteAddIn", "TodayNoteAddIn\TodayNoteAddIn.csproj", "{C1C90FDF-85F5-4481-BE86-7837E09BAC14}"
 EndProject
-Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup", "Setup\Setup.vdproj", "{C266FF53-988F-41A3-90BD-53ED4E3AE7D1}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TodayNote", "TodayNote\TodayNote.csproj", "{C85D28DF-AAC9-4E5B-9431-8714E6AB7ECF}"
 EndProject
 Global
@@ -19,8 +17,6 @@ Global
 		{C1C90FDF-85F5-4481-BE86-7837E09BAC14}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1C90FDF-85F5-4481-BE86-7837E09BAC14}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C1C90FDF-85F5-4481-BE86-7837E09BAC14}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C266FF53-988F-41A3-90BD-53ED4E3AE7D1}.Debug|Any CPU.ActiveCfg = Debug
-		{C266FF53-988F-41A3-90BD-53ED4E3AE7D1}.Release|Any CPU.ActiveCfg = Release
 		{C85D28DF-AAC9-4E5B-9431-8714E6AB7ECF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C85D28DF-AAC9-4E5B-9431-8714E6AB7ECF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C85D28DF-AAC9-4E5B-9431-8714E6AB7ECF}.Release|Any CPU.ActiveCfg = Release|Any CPU
