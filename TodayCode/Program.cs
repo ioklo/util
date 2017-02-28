@@ -18,14 +18,20 @@ namespace TodayCode
             // 일단 vscode로 합시다
             var editor = @"C:\Program Files (x86)\Microsoft VS Code\Code.exe";
             var folder = @"Z:\Onedrive\TodayCode\";
+
             var fileName = (result == DialogResult.Yes) 
                 ? $"{DateTime.Now.ToString("yyyy-MM-dd")}.cs" 
                 : $"{DateTime.Now.ToString("yyyy-MM-dd")}.cpp";
+
+            var fileContent = (result == DialogResult.Yes)
+                ? new CSharpTemplate().TransformText()
+                : new CppTemplate().TransformText();
 
             var fileInfo = new FileInfo(Path.Combine(folder, fileName));
             if( !fileInfo.Exists )
             {
                 var writer = fileInfo.CreateText();
+                writer.Write(fileContent);
                 writer.Close();
             }
 

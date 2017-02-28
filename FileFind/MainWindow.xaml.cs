@@ -133,7 +133,15 @@ namespace FileFind
                 button1.IsEnabled = false;
                 cancellationTokenSource.Cancel();
 
-                await searchTask;
+                try
+                {
+                    await searchTask;
+                }
+                catch
+                {
+
+                }
+                
                 searchTask = null;
                 cancellationTokenSource = null;
 
